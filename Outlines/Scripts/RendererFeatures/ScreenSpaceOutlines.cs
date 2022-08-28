@@ -5,10 +5,11 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering;
 
-public class ScreenSpaceOutlines : ScriptableRendererFeature {
+public class ScreenSpaceOutlines : ScriptableRendererFeature 
+{
 
     [System.Serializable]
-    private class ScreenSpaceOutlineSettings {
+    class ScreenSpaceOutlineSettings {
 
         [Header("General Outline Settings")]
         public Color outlineColor = Color.black;
@@ -34,7 +35,7 @@ public class ScreenSpaceOutlines : ScriptableRendererFeature {
     }
 
     [System.Serializable]
-    private class ViewSpaceNormalsTextureSettings {
+    class ViewSpaceNormalsTextureSettings {
 
         [Header("General Scene View Space Normal Texture Settings")]
         public RenderTextureFormat colorFormat;
@@ -49,17 +50,19 @@ public class ScreenSpaceOutlines : ScriptableRendererFeature {
 
     }
 
-    private class ViewSpaceNormalsTexturePass : ScriptableRenderPass {
+    class ViewSpaceNormalsTexturePass : ScriptableRenderPass
+    {
+        const string ProfilerTag = "Outlines/View-Space Normals Pass";
+        
+        ViewSpaceNormalsTextureSettings normalsTextureSettings;
+        FilteringSettings filteringSettings;
+        FilteringSettings occluderFilteringSettings;
 
-        private ViewSpaceNormalsTextureSettings normalsTextureSettings;
-        private FilteringSettings filteringSettings;
-        private FilteringSettings occluderFilteringSettings;
+        readonly List<ShaderTagId> shaderTagIdList;
+        readonly Material normalsMaterial;
+        readonly Material occludersMaterial;
 
-        private readonly List<ShaderTagId> shaderTagIdList;
-        private readonly Material normalsMaterial;
-        private readonly Material occludersMaterial;
-
-        private readonly RenderTargetHandle normals;
+        readonly RenderTargetHandle normals;
 
         public ViewSpaceNormalsTexturePass(RenderPassEvent renderPassEvent, LayerMask layerMask, LayerMask occluderLayerMask, ViewSpaceNormalsTextureSettings settings) {
             this.renderPassEvent = renderPassEvent;
@@ -96,7 +99,7 @@ public class ScreenSpaceOutlines : ScriptableRendererFeature {
                 return;
 
             CommandBuffer cmd = CommandBufferPool.Get();
-            using (new ProfilingScope(cmd, new ProfilingSampler("SceneViewSpaceNormalsTextureCreation"))) {
+            using (new ProfilingScope(cmd, new ProfilingSampler(ProfilerTag))) {
                 context.ExecuteCommandBuffer(cmd);
                 cmd.Clear();
 
@@ -123,9 +126,9 @@ public class ScreenSpaceOutlines : ScriptableRendererFeature {
 
     }
 
-    private class ScreenSpaceOutlinePass : ScriptableRenderPass {
+    class ScreenSpaceOutlinePass : ScriptableRenderPass {
 
-        private readonly Material screenSpaceOutlineMaterial;
+        readonly Material screenSpaceOutlineMaterial;
 
         RenderTargetIdentifier cameraColorTarget;
 
@@ -178,19 +181,23 @@ public class ScreenSpaceOutlines : ScriptableRendererFeature {
 
     }
 
-    [SerializeField] private RenderPassEvent renderPassEvent = RenderPassEvent.AfterRenderingOpaques;
-    [SerializeField] private LayerMask outlinesLayerMask;
-    [SerializeField] private LayerMask outlinesOccluderLayerMask;
+    [SerializeField] RenderPassEvent renderPassEvent = RenderPassEvent.AfterRenderingOpaques;
+    [SerializeField] LayerMask outlinesLayerMask;
+    [SerializeField] LayerMask outlinesOccluderLayerMask;
     
-    [SerializeField] private ScreenSpaceOutlineSettings outlineSettings = new ScreenSpaceOutlineSettings();
-    [SerializeField] private ViewSpaceNormalsTextureSettings viewSpaceNormalsTextureSettings = new ViewSpaceNormalsTextureSettings();
+    [SerializeField] ScreenSpaceOutlineSettings outlineSettings = new ScreenSpaceOutlineSettings();
+    [SerializeField] ViewSpaceNormalsTextureSettings viewSpaceNormalsTextureSettings = new ViewSpaceNormalsTextureSettings();
 
-    private ViewSpaceNormalsTexturePass viewSpaceNormalsTexturePass;
-    private ScreenSpaceOutlinePass screenSpaceOutlinePass;
+    ViewSpaceNormalsTexturePass viewSpaceNormalsTexturePass;
+    ScreenSpaceOutlinePass screenSpaceOutlinePass;
     
     public override void Create() {
         if (renderPassEvent < RenderPassEvent.BeforeRenderingPrePasses)
+        {
+            Debug.LogWarning($"This pass cannot be run earlier than " +
+                $"{RenderPassEvent.BeforeRenderingPrePasses}");
             renderPassEvent = RenderPassEvent.BeforeRenderingPrePasses;
+        }
 
         viewSpaceNormalsTexturePass = new ViewSpaceNormalsTexturePass(renderPassEvent, outlinesLayerMask, outlinesOccluderLayerMask, viewSpaceNormalsTextureSettings);
         screenSpaceOutlinePass = new ScreenSpaceOutlinePass(renderPassEvent, outlineSettings);
