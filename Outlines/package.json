@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+  },
+  "description": "Unity URP Outlines",
+  "displayName": "Outlines",
+  "name": "leftout.urp-outlines",
+  "unity": "2018.4",
+  "version": "0.0.1",
+  "samples": [
+  ]
+}
